@@ -12,4 +12,8 @@ public class SearchResponseModel
     public String getStat() {
         return stat;
     }
+
+    public PhotosResponseModel getPhotos() {
+        return photos;
+    }
 }

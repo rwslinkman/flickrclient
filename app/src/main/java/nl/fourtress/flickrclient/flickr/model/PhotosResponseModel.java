@@ -11,4 +11,9 @@ public class PhotosResponseModel
     private int perpage;
     private String total;
     private PhotoMetaModel[] photo;
+
+
+    public String getTotal() {
+        return total;
+    }
 }

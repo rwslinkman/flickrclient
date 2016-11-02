@@ -89,7 +89,15 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onFlickrSearchCompleted(SearchResponseModel response)
     {
+        String resultCount = response.getPhotos().getTotal();
         Log.d(TAG, "onFlickrSearchCompleted: response stat" + response.getStat());
+        Toast.makeText(this, "Found " + resultCount + " results on Flickr", Toast.LENGTH_SHORT).show();
+
+        // TODO Convert response model to RecyclerView dataset
+
+        mProgress.setVisibility(View.GONE);
+        mPhotoList.setItemViewCacheSize(View.VISIBLE);
+        mSearchField.getText().clear();
     }
 
     @Override
