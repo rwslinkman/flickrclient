@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">FlickrClient</string>
+    <string name="flickr_search_hint">Enter a keyword…</string>
+    <string name="no_keywords_entered">Please enter a keyword</string>
+    <string name="too_many_keywords">Too many keywords</string>
+    <string name="flickr_search_error">Error while getting Flickr images</string>
+</resources>
