@@ -1,5 +1,6 @@
 package nl.fourtress.flickrclient;
 
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import nl.fourtress.flickrclient.flickr.FlickrDownloadImageTask;
 import nl.fourtress.flickrclient.flickr.FlickrImageTask;
 import nl.fourtress.flickrclient.flickr.FlickrSearchTask;
 import nl.fourtress.flickrclient.flickr.model.PhotoMetaModel;
@@ -30,8 +32,7 @@ import nl.rwslinkman.presentable.PresentableAdapter;
 /**
  * @author Rick Slinkman
  */
-public class ListActivity extends AppCompatActivity implements View.OnClickListener, FlickrSearchTask.FlickrSearchCompletedListener
-{
+public class ListActivity extends AppCompatActivity implements View.OnClickListener, FlickrSearchTask.FlickrSearchCompletedListener, FlickrDownloadImageTask.FlickrImageDownloadCompletedListener {
     private static final String TAG = "ListActivity";
     private static final int PHOTOS_PER_PAGE = 15;
     private RecyclerView mPhotoList;
@@ -39,11 +40,11 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     private FloatingActionButton mSearchButton;
     private EditText mSearchField;
     private String mQueryURL;
-    private PresentableAdapter<PhotoMetaModel> mPhotoListAdapter;
+    private PresentableAdapter<ListItem> mPhotoListAdapter;
+    private ArrayList<ListItem> mVisiblePhotos;
     private PhotosResponseModel mCurrentSearch;
     private String mSearchTags;
     private boolean mIsQuerying;
-    private ArrayList<PhotoMetaModel> mVisiblePhotos;
     private int mExpected;
 
     @Override
@@ -116,11 +117,15 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
         // Reset values for new search
         mCurrentSearch = null;
         mSearchTags = null;
+        mVisiblePhotos.clear();
+        mPhotoListAdapter.notifyDataSetChanged();
 
         // UI
         Utils.closeKeyboard(this);
         mProgress.setVisibility(View.VISIBLE);
-        mPhotoList.setItemViewCacheSize(View.GONE);
+        mPhotoList.setVisibility(View.GONE);
+
+        Toast.makeText(this, getString(R.string.flickr_search_loading), Toast.LENGTH_LONG).show();
 
         // Execute API request
         mIsQuerying = true;
@@ -147,6 +152,7 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
         Log.d(TAG, "loadAdditionalItems: load items from page " + newPage);
 
         mIsQuerying = true;
+        Toast.makeText(this, getString(R.string.flickr_search_loading), Toast.LENGTH_LONG).show();
 
         String flickrQuery = mQueryURL +
                 "&tags=" + mSearchTags +
@@ -159,19 +165,18 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     public void onFlickrImageTaskCompleted(SizeModel[] sizes, PhotoMetaModel item)
     {
         //
-        mVisiblePhotos.add(item);
-        if(mVisiblePhotos.size() == mExpected)
-        {
-            Toast.makeText(this, getString(R.string.flickr_search_loaded), Toast.LENGTH_SHORT).show();
-            mExpected = 0;
-            // Redraw list
-            mPhotoListAdapter.notifyDataSetChanged();
+        SizeModel thumbNail = null;
+        for(SizeModel size : sizes) {
+            if(size.getLabel().equalsIgnoreCase("thumbnail"))
+            {
+                thumbNail = size;
+                break;
+            }
+        }
 
-            // Show list
-            mProgress.setVisibility(View.GONE);
-            mPhotoList.setVisibility(View.VISIBLE);
-            mSearchField.getText().clear();
-            mIsQuerying = false;
+        if(thumbNail != null) {
+            FlickrDownloadImageTask downloadTask = new FlickrDownloadImageTask(thumbNail.getSource(), item, sizes, this);
+            downloadTask.execute();
         }
     }
 
@@ -185,6 +190,25 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
         // UI updates after request
         mProgress.setVisibility(View.GONE);
         mPhotoList.setItemViewCacheSize(View.GONE);
-        mSearchField.getText().clear();
+    }
+
+    @Override
+    public void onFlickrImageDownloaded(PhotoMetaModel item, SizeModel[] sizes, Bitmap result)
+    {
+        ListItem photoItem = new ListItem(item, result, sizes);
+        mVisiblePhotos.add(photoItem);
+        // Redraw list
+        mPhotoListAdapter.notifyDataSetChanged();
+
+        // Show list
+        mProgress.setVisibility(View.GONE);
+        mPhotoList.setVisibility(View.VISIBLE);
+
+        // Finalize last loading
+        if(mVisiblePhotos.size() == mExpected) {
+            Toast.makeText(this, getString(R.string.flickr_search_loaded), Toast.LENGTH_SHORT).show();
+            mExpected = 0;
+            mIsQuerying = false;
+        }
     }
 }

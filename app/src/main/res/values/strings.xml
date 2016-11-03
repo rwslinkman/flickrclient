@@ -5,4 +5,5 @@
     <string name="too_many_keywords">Too many keywords</string>
     <string name="flickr_search_error">Unknown error while getting Flickr images</string>
     <string name="flickr_search_loaded">Loaded new images from Flickr</string>
+    <string name="flickr_search_loading">Loading new photos</string>
 </resources>
