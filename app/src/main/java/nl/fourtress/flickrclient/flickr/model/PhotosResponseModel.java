@@ -16,4 +16,20 @@ public class PhotosResponseModel
     public String getTotal() {
         return total;
     }
+
+    public int getPage() {
+        return page;
+    }
+
+    public int getPages() {
+        return pages;
+    }
+
+    public int getPerpage() {
+        return perpage;
+    }
+
+    public PhotoMetaModel[] getPhoto() {
+        return photo;
+    }
 }

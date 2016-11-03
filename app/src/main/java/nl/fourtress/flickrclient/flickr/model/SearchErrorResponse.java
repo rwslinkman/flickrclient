@@ -13,4 +13,12 @@ public class SearchErrorResponse
     public String getMessage() {
         return message;
     }
+
+    public String getStat() {
+        return stat;
+    }
+
+    public int getCode() {
+        return code;
+    }
 }

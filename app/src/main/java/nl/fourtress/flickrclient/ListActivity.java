@@ -3,6 +3,7 @@ package nl.fourtress.flickrclient;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
@@ -10,9 +11,18 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.github.pwittchen.infinitescroll.library.InfiniteScrollListener;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
 import nl.fourtress.flickrclient.flickr.FlickrSearchTask;
+import nl.fourtress.flickrclient.flickr.model.PhotoMetaModel;
+import nl.fourtress.flickrclient.flickr.model.PhotosResponseModel;
 import nl.fourtress.flickrclient.flickr.model.SearchErrorResponse;
 import nl.fourtress.flickrclient.flickr.model.SearchResponseModel;
+import nl.fourtress.flickrclient.presenter.PhotoItemPresenter;
+import nl.rwslinkman.presentable.PresentableAdapter;
 
 /**
  * @author Rick Slinkman
@@ -25,6 +35,11 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     private FloatingActionButton mSearchButton;
     private EditText mSearchField;
     private String mQueryURL;
+    private PresentableAdapter<PhotoMetaModel> mPhotoListAdapter;
+    private PhotosResponseModel mCurrentSearch;
+    private String mSearchTags;
+    private boolean mIsQuerying;
+    private ArrayList<PhotoMetaModel> mVisiblePhotos;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -33,6 +48,19 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_list);
 
         mPhotoList = (RecyclerView) findViewById(R.id.flickr_photo_list);
+        LinearLayoutManager mgr = new LinearLayoutManager(this);
+        mPhotoList.setLayoutManager(mgr);
+        mPhotoList.addOnScrollListener(new InfiniteScrollListener(100, mgr) {
+            @Override
+            public void onScrolledToEnd(int firstVisibleItemPosition)
+            {
+                Log.d(TAG, "onScrolledToEnd: first visible position " + firstVisibleItemPosition);
+                if(mIsQuerying) return;
+                // Only load when not busy
+                loadAdditionalItems(mCurrentSearch);
+            }
+        });
+
         mProgress = (ProgressBar) findViewById(R.id.flickr_search_progress);
         mSearchButton = (FloatingActionButton) findViewById(R.id.flickr_search_btn);
         mSearchField = (EditText) findViewById(R.id.flickr_search_field);
@@ -49,6 +77,10 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     {
         super.onResume();
         mSearchButton.setOnClickListener(this);
+
+        mVisiblePhotos = new ArrayList<>();
+        mPhotoListAdapter = new PresentableAdapter<>(new PhotoItemPresenter(), mVisiblePhotos);
+        mPhotoList.setAdapter(mPhotoListAdapter);
     }
 
     @Override
@@ -75,14 +107,18 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
             return;
         }
 
+        mCurrentSearch = null;
+        mSearchTags = null;
+
         // UI
         Utils.closeKeyboard(this);
         mProgress.setVisibility(View.VISIBLE);
         mPhotoList.setItemViewCacheSize(View.GONE);
 
         // Execute API request
-        String tagsParam = Utils.joinTags(tags, "%2C");
-        String flickrQuery = mQueryURL + "&tags=" + tagsParam;
+        mIsQuerying = true;
+        mSearchTags = Utils.joinTags(tags, "%2C");
+        String flickrQuery = mQueryURL + "&tags=" + mSearchTags;
         FlickrSearchTask task = new FlickrSearchTask(flickrQuery, this);
         task.execute();
     }
@@ -90,20 +126,37 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onFlickrSearchCompleted(SearchResponseModel response)
     {
-        String resultCount = response.getPhotos().getTotal();
+        mIsQuerying = false;
+        int resultCount = Integer.parseInt(response.getPhotos().getTotal());
         Log.d(TAG, "onFlickrSearchCompleted: response stat" + response.getStat());
         Toast.makeText(this, "Found " + resultCount + " results on Flickr", Toast.LENGTH_SHORT).show();
 
-        // TODO Convert response model to RecyclerView dataset
+        if(resultCount > 0)
+        {
+            mCurrentSearch = response.getPhotos();
 
-        mProgress.setVisibility(View.GONE);
-        mPhotoList.setItemViewCacheSize(View.VISIBLE);
-        mSearchField.getText().clear();
+            PhotoMetaModel[] metaModels = mCurrentSearch.getPhoto();
+            mVisiblePhotos.addAll(Arrays.asList(metaModels));
+            mPhotoListAdapter.notifyDataSetChanged();
+
+            Log.d(TAG, "onFlickrSearchCompleted: photos " + metaModels.length);
+
+            mProgress.setVisibility(View.GONE);
+            mPhotoList.setVisibility(View.VISIBLE);
+            mSearchField.getText().clear();
+        }
+        else {
+            // Hide views when showing Toast message
+            mProgress.setVisibility(View.GONE);
+            mPhotoList.setVisibility(View.GONE);
+            mSearchField.getText().clear();
+        }
     }
 
     @Override
     public void onFlickrSearchError(SearchErrorResponse errorResponse)
     {
+        mIsQuerying = false;
         Log.e(TAG, "onFlickrSearchError: Request was not successful");
         String msg = (errorResponse == null) ? getString(R.string.flickr_search_error) : errorResponse.getMessage();
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
@@ -112,5 +165,19 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
         mProgress.setVisibility(View.GONE);
         mPhotoList.setItemViewCacheSize(View.GONE);
         mSearchField.getText().clear();
+    }
+
+    private void loadAdditionalItems(PhotosResponseModel search)
+    {
+        int newPage = search.getPage() + 1;
+        Log.d(TAG, "loadAdditionalItems: load items from page " + newPage);
+
+        mIsQuerying = true;
+
+        String flickrQuery = mQueryURL +
+                "&tags=" + mSearchTags +
+                "&page=" + newPage;
+        FlickrSearchTask task = new FlickrSearchTask(flickrQuery, this);
+        task.execute();
     }
 }
