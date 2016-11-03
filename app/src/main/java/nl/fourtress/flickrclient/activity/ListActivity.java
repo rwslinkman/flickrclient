@@ -1,5 +1,6 @@
-package nl.fourtress.flickrclient;
+package nl.fourtress.flickrclient.activity;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -15,11 +16,13 @@ import android.widget.Toast;
 import com.github.pwittchen.infinitescroll.library.InfiniteScrollListener;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
+import nl.fourtress.flickrclient.BuildConfig;
+import nl.fourtress.flickrclient.FlickrClient;
+import nl.fourtress.flickrclient.ListItem;
+import nl.fourtress.flickrclient.R;
+import nl.fourtress.flickrclient.Utils;
 import nl.fourtress.flickrclient.flickr.FlickrDownloadImageTask;
-import nl.fourtress.flickrclient.flickr.FlickrImageTask;
 import nl.fourtress.flickrclient.flickr.FlickrSearchTask;
 import nl.fourtress.flickrclient.flickr.model.PhotoMetaModel;
 import nl.fourtress.flickrclient.flickr.model.PhotosResponseModel;
@@ -28,11 +31,16 @@ import nl.fourtress.flickrclient.flickr.model.SearchResponseModel;
 import nl.fourtress.flickrclient.flickr.model.SizeModel;
 import nl.fourtress.flickrclient.presenter.PhotoItemPresenter;
 import nl.rwslinkman.presentable.PresentableAdapter;
+import nl.rwslinkman.presentable.PresentableItemClickListener;
 
 /**
  * @author Rick Slinkman
  */
-public class ListActivity extends AppCompatActivity implements View.OnClickListener, FlickrSearchTask.FlickrSearchCompletedListener, FlickrDownloadImageTask.FlickrImageDownloadCompletedListener {
+public class ListActivity extends AppCompatActivity implements View.OnClickListener,
+        FlickrSearchTask.FlickrSearchCompletedListener,
+        FlickrDownloadImageTask.FlickrImageDownloadCompletedListener,
+        PresentableItemClickListener<ListItem>
+{
     private static final String TAG = "ListActivity";
     private static final int PHOTOS_PER_PAGE = 15;
     private RecyclerView mPhotoList;
@@ -60,12 +68,15 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onScrolledToEnd(int firstVisibleItemPosition)
             {
-                Log.d(TAG, "onScrolledToEnd: first visible position " + firstVisibleItemPosition);
                 if(mIsQuerying) return;
                 // Only load when not busy
                 loadAdditionalItems(mCurrentSearch);
             }
         });
+        mVisiblePhotos = new ArrayList<>();
+        mPhotoListAdapter = new PresentableAdapter<>(new PhotoItemPresenter(), mVisiblePhotos);
+        mPhotoListAdapter.setItemClickListener(this);
+        mPhotoList.setAdapter(mPhotoListAdapter);
 
         mProgress = (ProgressBar) findViewById(R.id.flickr_search_progress);
         mSearchButton = (FloatingActionButton) findViewById(R.id.flickr_search_btn);
@@ -84,10 +95,6 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     {
         super.onResume();
         mSearchButton.setOnClickListener(this);
-
-        mVisiblePhotos = new ArrayList<>();
-        mPhotoListAdapter = new PresentableAdapter<>(new PhotoItemPresenter(), mVisiblePhotos);
-        mPhotoList.setAdapter(mPhotoListAdapter);
     }
 
     @Override
@@ -167,7 +174,7 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
         //
         SizeModel thumbNail = null;
         for(SizeModel size : sizes) {
-            if(size.getLabel().equalsIgnoreCase("thumbnail"))
+            if(size.getLabel().equalsIgnoreCase("medium"))
             {
                 thumbNail = size;
                 break;
@@ -177,6 +184,8 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
         if(thumbNail != null) {
             FlickrDownloadImageTask downloadTask = new FlickrDownloadImageTask(thumbNail.getSource(), item, sizes, this);
             downloadTask.execute();
+        } else {
+            Log.e(TAG, "onFlickrImageTaskCompleted: Size unavailable for item " + item.getId());
         }
     }
 
@@ -210,5 +219,21 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
             mExpected = 0;
             mIsQuerying = false;
         }
+    }
+
+    @Override
+    public void onItemClicked(ListItem item)
+    {
+        FlickrClient app = (FlickrClient) getApplication();
+        app.setTempItem(item);
+
+        Log.d(TAG, "onItemClicked: item " + item.getMeta().getId());
+        Intent detailIntent = new Intent(this, DetailActivity.class);
+        startActivity(detailIntent);
+    }
+
+    @Override
+    public void onItemSelected(ListItem item) {
+        // NOP
     }
 }

@@ -23,4 +23,8 @@ public class SizeModel
     public String getSource() {
         return source;
     }
+
+    public int getWidth() {
+        return width;
+    }
 }

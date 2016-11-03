@@ -8,9 +8,9 @@ import android.view.inputmethod.InputMethodManager;
 /**
  * @author Rick Slinkan
  */
-class Utils
+public class Utils
 {
-    static String joinTags(String[] tags, String delim)
+    public static String joinTags(String[] tags, String delim)
     {
         StringBuilder sb = new StringBuilder();
         String loopDelim = "";
@@ -22,7 +22,7 @@ class Utils
         return sb.toString();
     }
 
-    static void closeKeyboard(Activity a)
+    public static void closeKeyboard(Activity a)
     {
         View view = a.getCurrentFocus();
         if (view != null) {

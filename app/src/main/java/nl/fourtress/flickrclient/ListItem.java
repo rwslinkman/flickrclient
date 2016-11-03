@@ -1,7 +1,6 @@
 package nl.fourtress.flickrclient;
 
 import android.graphics.Bitmap;
-import android.support.v7.view.menu.MenuPresenter;
 
 import nl.fourtress.flickrclient.flickr.model.PhotoMetaModel;
 import nl.fourtress.flickrclient.flickr.model.SizeModel;
@@ -29,5 +28,9 @@ public class ListItem
 
     public Bitmap getThumbnail() {
         return mThumbnail;
+    }
+
+    public SizeModel[] getSizes() {
+        return mSizes;
     }
 }

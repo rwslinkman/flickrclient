@@ -34,6 +34,11 @@ public class FlickrDownloadImageTask extends AsyncTask<String, Void, Bitmap>
         this.mListener = listener;
     }
 
+    public FlickrDownloadImageTask(String imgURL, FlickrImageDownloadCompletedListener listener)
+    {
+        this(imgURL, null, null, listener);
+    }
+
     protected Bitmap doInBackground(String... urls)
     {
         Bitmap bitmap = null;
@@ -41,7 +46,6 @@ public class FlickrDownloadImageTask extends AsyncTask<String, Void, Bitmap>
         try {
             InputStream in = new URL(mImageURL).openStream();
             bitmap = BitmapFactory.decodeStream(in);
-            Log.d(TAG, "doInBackground: bitmap loaded " + (bitmap != null));
         } catch (Exception e) {
             Log.e("Error", e.getMessage());
             e.printStackTrace();

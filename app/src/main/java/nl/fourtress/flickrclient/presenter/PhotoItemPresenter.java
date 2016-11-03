@@ -29,7 +29,6 @@ public class PhotoItemPresenter implements Presenter<ListItem, PhotoItemPresente
         View v = inflater.inflate(R.layout.item_photo, parent, false);
 
         ViewHolder viewHolder = new ViewHolder(v);
-        viewHolder.test = (TextView) v.findViewById(R.id.item_photo_test);
         viewHolder.thumbNail = (ImageView) v.findViewById(R.id.item_photo_image);
 
         return viewHolder;
@@ -38,10 +37,7 @@ public class PhotoItemPresenter implements Presenter<ListItem, PhotoItemPresente
     @Override
     public void onBindViewHolder(ViewHolder viewHolder, ListItem item)
     {
-        viewHolder.test.setText(item.getMeta().getId());
         viewHolder.thumbNail.setImageBitmap(item.getThumbnail());
-
-        Log.d(TAG, "onBindViewHolder: bitmap exists " + (item.getThumbnail() != null));
     }
 
     @Override
@@ -51,7 +47,6 @@ public class PhotoItemPresenter implements Presenter<ListItem, PhotoItemPresente
 
     class ViewHolder extends RecyclerView.ViewHolder
     {
-        TextView test;
         ImageView thumbNail;
 
         ViewHolder(View itemView) {
