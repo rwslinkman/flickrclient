@@ -4,7 +4,7 @@ import android.util.Log;
 
 import com.google.gson.Gson;
 
-import nl.fourtress.flickrclient.flickr.model.SearchErrorResponse;
+import nl.fourtress.flickrclient.flickr.model.FlickrErrorResponse;
 import nl.fourtress.flickrclient.flickr.model.SearchResponseModel;
 
 /**
@@ -14,7 +14,7 @@ public class FlickrSearchTask extends HttpRequestTask
 {
     public interface FlickrSearchCompletedListener {
         void onFlickrSearchCompleted(SearchResponseModel response);
-        void onFlickrSearchError(SearchErrorResponse errorResponse);
+        void onFlickrSearchError(FlickrErrorResponse errorResponse);
     }
 
     private static final String TAG = "FlickrSearchTask";
@@ -42,7 +42,7 @@ public class FlickrSearchTask extends HttpRequestTask
                     mCompletedListener.onFlickrSearchCompleted(model);
                 } else {
                     // There seems to be an error
-                    SearchErrorResponse errorResponse = converter.fromJson(getResponseBody(), SearchErrorResponse.class);
+                    FlickrErrorResponse errorResponse = converter.fromJson(getResponseBody(), FlickrErrorResponse.class);
                     mCompletedListener.onFlickrSearchError(errorResponse);
                 }
             }

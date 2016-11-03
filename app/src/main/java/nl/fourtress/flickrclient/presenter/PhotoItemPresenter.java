@@ -6,7 +6,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import nl.fourtress.flickrclient.BuildConfig;
 import nl.fourtress.flickrclient.R;
+import nl.fourtress.flickrclient.flickr.FlickrImageTask;
 import nl.fourtress.flickrclient.flickr.model.PhotoMetaModel;
 import nl.rwslinkman.presentable.Presenter;
 

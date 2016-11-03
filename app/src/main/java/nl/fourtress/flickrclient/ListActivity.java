@@ -15,11 +15,13 @@ import com.github.pwittchen.infinitescroll.library.InfiniteScrollListener;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
+import nl.fourtress.flickrclient.flickr.FlickrImageTask;
 import nl.fourtress.flickrclient.flickr.FlickrSearchTask;
 import nl.fourtress.flickrclient.flickr.model.PhotoMetaModel;
 import nl.fourtress.flickrclient.flickr.model.PhotosResponseModel;
-import nl.fourtress.flickrclient.flickr.model.SearchErrorResponse;
+import nl.fourtress.flickrclient.flickr.model.FlickrErrorResponse;
 import nl.fourtress.flickrclient.flickr.model.SearchResponseModel;
 import nl.fourtress.flickrclient.presenter.PhotoItemPresenter;
 import nl.rwslinkman.presentable.PresentableAdapter;
@@ -107,6 +109,7 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
             return;
         }
 
+        // Reset values for new search
         mCurrentSearch = null;
         mSearchTags = null;
 
@@ -127,16 +130,28 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     public void onFlickrSearchCompleted(SearchResponseModel response)
     {
         mIsQuerying = false;
-        int resultCount = Integer.parseInt(response.getPhotos().getTotal());
-        Log.d(TAG, "onFlickrSearchCompleted: response stat" + response.getStat());
-        Toast.makeText(this, "Found " + resultCount + " results on Flickr", Toast.LENGTH_SHORT).show();
+        int resultCount = response.getPhotos().getPerPage();
+        Toast.makeText(this, "Loaded " + resultCount + " photos from Flickr", Toast.LENGTH_SHORT).show();
 
         if(resultCount > 0)
         {
             mCurrentSearch = response.getPhotos();
 
             PhotoMetaModel[] metaModels = mCurrentSearch.getPhoto();
-            mVisiblePhotos.addAll(Arrays.asList(metaModels));
+            List<PhotoMetaModel> modelsToAdd = Arrays.asList(metaModels);
+            for(PhotoMetaModel item : modelsToAdd)
+            {
+                // GET sizes for each photo
+                String url = String.format("https://api.flickr.com/services/rest/?method=flickr.photos.getSizes" +
+                                "&api_key=%s" +
+                                "&photo_id=%s" +
+                                "&format=json" +
+                                "&nojsoncallback=1",
+                                BuildConfig.FLICKR_API_KEY, item.getId());
+                FlickrImageTask task = new FlickrImageTask(url);
+                task.execute();
+            }
+            mVisiblePhotos.addAll(modelsToAdd);
             mPhotoListAdapter.notifyDataSetChanged();
 
             Log.d(TAG, "onFlickrSearchCompleted: photos " + metaModels.length);
@@ -154,7 +169,7 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     @Override
-    public void onFlickrSearchError(SearchErrorResponse errorResponse)
+    public void onFlickrSearchError(FlickrErrorResponse errorResponse)
     {
         mIsQuerying = false;
         Log.e(TAG, "onFlickrSearchError: Request was not successful");

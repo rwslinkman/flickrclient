@@ -25,7 +25,7 @@ public class PhotosResponseModel
         return pages;
     }
 
-    public int getPerpage() {
+    public int getPerPage() {
         return perpage;
     }
 
