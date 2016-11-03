@@ -6,32 +6,51 @@ import com.google.gson.Gson;
 
 import nl.fourtress.flickrclient.flickr.model.FlickrErrorResponse;
 import nl.fourtress.flickrclient.flickr.model.ImageSizesResponseModel;
+import nl.fourtress.flickrclient.flickr.model.PhotoMetaModel;
+import nl.fourtress.flickrclient.flickr.model.SizeModel;
 
 /**
  * @author Rick Slinkman
  */
 public class FlickrImageTask extends HttpRequestTask
 {
+    public interface FlickerImageTaskCompletedListener {
+        void onFlickrImageTaskCompleted(SizeModel[] sizes, PhotoMetaModel item);
+        void onFlickrImageTaskError(FlickrErrorResponse error);
+    }
+
     private static final String TAG = "FlickrImageTask";
-    public FlickrImageTask(String endpoint)
+    private final FlickerImageTaskCompletedListener mCompletedListener;
+    private final PhotoMetaModel mItem;
+
+    public FlickrImageTask(String endpoint, PhotoMetaModel item, FlickerImageTaskCompletedListener listener)
     {
         super(endpoint, GET);
+        this.mCompletedListener = listener;
+        this.mItem = item;
     }
 
     @Override
     protected void onRequestComplete()
     {
+        if(mCompletedListener == null) {
+            // Nobody interested in result
+            return;
+        }
+
         Gson converter = new Gson();
         ImageSizesResponseModel model = converter.fromJson(getResponseBody(), ImageSizesResponseModel.class);
         Log.d(TAG, "onRequestComplete: body " + getResponseBody());
         Log.d(TAG, "onRequestComplete: code " + getResponseCode());
-        if(model != null && model.getSizes() != null && model.getStat().equals("ok")) {
-
+        if(model != null && model.getSizes() != null && model.getStat().equals("ok"))
+        {
+            mCompletedListener.onFlickrImageTaskCompleted(model.getSizes().getSize(), mItem);
             Log.d(TAG, "onRequestComplete: request successful");
             Log.d(TAG, "onRequestComplete: image has " + model.getSizes().getSize().length+ " sizes");
         }
         else {
             FlickrErrorResponse error = converter.fromJson(getResponseBody(), FlickrErrorResponse.class);
+            mCompletedListener.onFlickrImageTaskError(error);
             Log.e(TAG, "onRequestComplete: error " + error.getMessage());
         }
     }

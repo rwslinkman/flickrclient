@@ -23,6 +23,7 @@ import nl.fourtress.flickrclient.flickr.model.PhotoMetaModel;
 import nl.fourtress.flickrclient.flickr.model.PhotosResponseModel;
 import nl.fourtress.flickrclient.flickr.model.FlickrErrorResponse;
 import nl.fourtress.flickrclient.flickr.model.SearchResponseModel;
+import nl.fourtress.flickrclient.flickr.model.SizeModel;
 import nl.fourtress.flickrclient.presenter.PhotoItemPresenter;
 import nl.rwslinkman.presentable.PresentableAdapter;
 
@@ -32,6 +33,7 @@ import nl.rwslinkman.presentable.PresentableAdapter;
 public class ListActivity extends AppCompatActivity implements View.OnClickListener, FlickrSearchTask.FlickrSearchCompletedListener
 {
     private static final String TAG = "ListActivity";
+    private static final int PHOTOS_PER_PAGE = 15;
     private RecyclerView mPhotoList;
     private ProgressBar mProgress;
     private FloatingActionButton mSearchButton;
@@ -42,6 +44,7 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     private String mSearchTags;
     private boolean mIsQuerying;
     private ArrayList<PhotoMetaModel> mVisiblePhotos;
+    private int mExpected;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -52,7 +55,7 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
         mPhotoList = (RecyclerView) findViewById(R.id.flickr_photo_list);
         LinearLayoutManager mgr = new LinearLayoutManager(this);
         mPhotoList.setLayoutManager(mgr);
-        mPhotoList.addOnScrollListener(new InfiniteScrollListener(100, mgr) {
+        mPhotoList.addOnScrollListener(new InfiniteScrollListener(PHOTOS_PER_PAGE, mgr) {
             @Override
             public void onScrolledToEnd(int firstVisibleItemPosition)
             {
@@ -69,6 +72,7 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
 
         String url = "https://api.flickr.com/services/rest/?method=flickr.photos.search" +
                     "&api_key=%s" +
+                    "&per_page=" + PHOTOS_PER_PAGE +
                     "&format=json" +
                     "&nojsoncallback=1";
         this.mQueryURL = String.format(url, BuildConfig.FLICKR_API_KEY);
@@ -129,57 +133,12 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onFlickrSearchCompleted(SearchResponseModel response)
     {
-        mIsQuerying = false;
         int resultCount = response.getPhotos().getPerPage();
-        Toast.makeText(this, "Loaded " + resultCount + " photos from Flickr", Toast.LENGTH_SHORT).show();
-
-        if(resultCount > 0)
-        {
+        if(resultCount > 0) {
             mCurrentSearch = response.getPhotos();
-
             PhotoMetaModel[] metaModels = mCurrentSearch.getPhoto();
-            List<PhotoMetaModel> modelsToAdd = Arrays.asList(metaModels);
-            for(PhotoMetaModel item : modelsToAdd)
-            {
-                // GET sizes for each photo
-                String url = String.format("https://api.flickr.com/services/rest/?method=flickr.photos.getSizes" +
-                                "&api_key=%s" +
-                                "&photo_id=%s" +
-                                "&format=json" +
-                                "&nojsoncallback=1",
-                                BuildConfig.FLICKR_API_KEY, item.getId());
-                FlickrImageTask task = new FlickrImageTask(url);
-                task.execute();
-            }
-            mVisiblePhotos.addAll(modelsToAdd);
-            mPhotoListAdapter.notifyDataSetChanged();
-
-            Log.d(TAG, "onFlickrSearchCompleted: photos " + metaModels.length);
-
-            mProgress.setVisibility(View.GONE);
-            mPhotoList.setVisibility(View.VISIBLE);
-            mSearchField.getText().clear();
+            mExpected = mVisiblePhotos.size() + metaModels.length;
         }
-        else {
-            // Hide views when showing Toast message
-            mProgress.setVisibility(View.GONE);
-            mPhotoList.setVisibility(View.GONE);
-            mSearchField.getText().clear();
-        }
-    }
-
-    @Override
-    public void onFlickrSearchError(FlickrErrorResponse errorResponse)
-    {
-        mIsQuerying = false;
-        Log.e(TAG, "onFlickrSearchError: Request was not successful");
-        String msg = (errorResponse == null) ? getString(R.string.flickr_search_error) : errorResponse.getMessage();
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
-
-        // UI updates after request
-        mProgress.setVisibility(View.GONE);
-        mPhotoList.setItemViewCacheSize(View.GONE);
-        mSearchField.getText().clear();
     }
 
     private void loadAdditionalItems(PhotosResponseModel search)
@@ -194,5 +153,38 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
                 "&page=" + newPage;
         FlickrSearchTask task = new FlickrSearchTask(flickrQuery, this);
         task.execute();
+    }
+
+    @Override
+    public void onFlickrImageTaskCompleted(SizeModel[] sizes, PhotoMetaModel item)
+    {
+        //
+        mVisiblePhotos.add(item);
+        if(mVisiblePhotos.size() == mExpected)
+        {
+            Toast.makeText(this, getString(R.string.flickr_search_loaded), Toast.LENGTH_SHORT).show();
+            mExpected = 0;
+            // Redraw list
+            mPhotoListAdapter.notifyDataSetChanged();
+
+            // Show list
+            mProgress.setVisibility(View.GONE);
+            mPhotoList.setVisibility(View.VISIBLE);
+            mSearchField.getText().clear();
+            mIsQuerying = false;
+        }
+    }
+
+    @Override
+    public void onFlickrImageTaskError(FlickrErrorResponse error) {
+        mIsQuerying = false;
+        Log.e(TAG, "onFlickrSearchError: Request was not successful");
+        String msg = (error == null) ? getString(R.string.flickr_search_error) : error.getMessage();
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+
+        // UI updates after request
+        mProgress.setVisibility(View.GONE);
+        mPhotoList.setItemViewCacheSize(View.GONE);
+        mSearchField.getText().clear();
     }
 }
