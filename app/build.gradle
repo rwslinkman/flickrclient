@@ -13,7 +13,8 @@ android {
     }
     buildTypes {
         buildTypes.each({
-            it.buildConfigField("String", "FLICKR_API_KEY", '"34a1b8b0fd29c800a9c50c900ab18b9c"');
+//            it.buildConfigField("String", "FLICKR_API_KEY", '"34a1b8b0fd29c800a9c50c900ab18b9c"');
+            it.buildConfigField("String", "FLICKR_API_KEY", '"2f0c238a3572839f5f6bde8e77f97bfc"');
         })
         release {
             minifyEnabled false

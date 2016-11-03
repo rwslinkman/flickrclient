@@ -11,6 +11,7 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import nl.fourtress.flickrclient.flickr.FlickrSearchTask;
+import nl.fourtress.flickrclient.flickr.model.SearchErrorResponse;
 import nl.fourtress.flickrclient.flickr.model.SearchResponseModel;
 
 /**
@@ -101,9 +102,13 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     @Override
-    public void onFlickrSearchError()
+    public void onFlickrSearchError(SearchErrorResponse errorResponse)
     {
-        Toast.makeText(this, getString(R.string.flickr_search_error), Toast.LENGTH_SHORT).show();
+        Log.e(TAG, "onFlickrSearchError: Request was not successful");
+        String msg = (errorResponse == null) ? getString(R.string.flickr_search_error) : errorResponse.getMessage();
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+
+        // UI updates after request
         mProgress.setVisibility(View.GONE);
         mPhotoList.setItemViewCacheSize(View.GONE);
         mSearchField.getText().clear();
