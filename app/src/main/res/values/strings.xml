@@ -13,4 +13,5 @@
     <string name="flickr_search_none_found">No results found</string>
     <string name="detail_image_descr">Detail image from Flickr</string>
     <string name="item_photo_descr">Flickr image</string>
+    <string name="easter_egg_shuffle">Images were shuffled</string>
 </resources>

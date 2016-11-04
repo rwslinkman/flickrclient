@@ -14,7 +14,7 @@ import android.widget.Toast;
 import java.util.Locale;
 
 import nl.fourtress.flickrclient.FlickrClient;
-import nl.fourtress.flickrclient.ListItem;
+import nl.fourtress.flickrclient.util.ListItem;
 import nl.fourtress.flickrclient.R;
 import nl.fourtress.flickrclient.flickr.FlickrDownloadImageTask;
 import nl.fourtress.flickrclient.flickr.model.PhotoMetaModel;

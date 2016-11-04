@@ -6,7 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
-import nl.fourtress.flickrclient.ListItem;
+import nl.fourtress.flickrclient.util.ListItem;
 import nl.fourtress.flickrclient.R;
 import nl.rwslinkman.presentable.Presenter;
 

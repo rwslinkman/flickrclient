@@ -1,4 +1,4 @@
-package nl.fourtress.flickrclient;
+package nl.fourtress.flickrclient.util;
 
 import android.app.Activity;
 import android.content.Context;

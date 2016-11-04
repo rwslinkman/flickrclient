@@ -6,10 +6,10 @@ import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
-import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ProgressBar;
@@ -18,17 +18,19 @@ import android.widget.Toast;
 import com.github.pwittchen.infinitescroll.library.InfiniteScrollListener;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import nl.fourtress.flickrclient.BuildConfig;
 import nl.fourtress.flickrclient.FlickrClient;
-import nl.fourtress.flickrclient.ListItem;
+import nl.fourtress.flickrclient.util.ListItem;
 import nl.fourtress.flickrclient.R;
-import nl.fourtress.flickrclient.Utils;
+import nl.fourtress.flickrclient.util.ShakeListener;
+import nl.fourtress.flickrclient.util.Utils;
 import nl.fourtress.flickrclient.flickr.FlickrDownloadImageTask;
 import nl.fourtress.flickrclient.flickr.FlickrSearchTask;
+import nl.fourtress.flickrclient.flickr.model.FlickrErrorResponse;
 import nl.fourtress.flickrclient.flickr.model.PhotoMetaModel;
 import nl.fourtress.flickrclient.flickr.model.PhotosResponseModel;
-import nl.fourtress.flickrclient.flickr.model.FlickrErrorResponse;
 import nl.fourtress.flickrclient.flickr.model.SearchResponseModel;
 import nl.fourtress.flickrclient.flickr.model.SizeModel;
 import nl.fourtress.flickrclient.presenter.PhotoItemPresenter;
@@ -41,10 +43,13 @@ import nl.rwslinkman.presentable.PresentableItemClickListener;
 public class ListActivity extends AppCompatActivity implements View.OnClickListener,
         FlickrSearchTask.FlickrSearchCompletedListener,
         FlickrDownloadImageTask.FlickrImageDownloadCompletedListener,
-        PresentableItemClickListener<ListItem>
+        PresentableItemClickListener<ListItem>,
+        View.OnKeyListener,
+        ShakeListener.OnShakeListener
 {
     private static final String TAG = "ListActivity";
     private static final int PHOTOS_PER_PAGE = 15;
+
     private RecyclerView mPhotoList;
     private ProgressBar mProgress;
     private FloatingActionButton mSearchButton;
@@ -56,6 +61,7 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     private String mSearchTags;
     private boolean mIsQuerying;
     private int mExpected;
+    private ShakeListener shakeListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -84,6 +90,7 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
         mProgress = (ProgressBar) findViewById(R.id.flickr_search_progress);
         mSearchButton = (FloatingActionButton) findViewById(R.id.flickr_search_btn);
         mSearchField = (EditText) findViewById(R.id.flickr_search_field);
+        mSearchField.setOnKeyListener(this);
 
         String url = "https://api.flickr.com/services/rest/?method=flickr.photos.search" +
                     "&api_key=%s" +
@@ -98,12 +105,16 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     {
         super.onResume();
         mSearchButton.setOnClickListener(this);
+
+        shakeListener = new ShakeListener(this);
+        shakeListener.startListening(this);
     }
 
     @Override
     protected void onPause()
     {
         mSearchButton.setOnClickListener(null);
+        shakeListener.stopListening();
         super.onPause();
     }
 
@@ -241,5 +252,35 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onItemSelected(ListItem item) {
         // NOP
+    }
+
+    @Override
+    public boolean onKey(View view, int keyCode, KeyEvent event)
+    {
+        if (event.getAction() == KeyEvent.ACTION_DOWN)
+        {
+            switch (keyCode)
+            {
+                case KeyEvent.KEYCODE_DPAD_CENTER:
+                case KeyEvent.KEYCODE_ENTER:
+                    // Simulate button click
+                    onClick(mSearchButton);
+                    return true;
+                default:
+                    break;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public void onShake()
+    {
+        if(mVisiblePhotos.size() > 0) {
+            Toast.makeText(this, getString(R.string.easter_egg_shuffle), Toast.LENGTH_SHORT).show();
+            Collections.shuffle(mVisiblePhotos);
+            mPhotoListAdapter.notifyDataSetChanged();
+            Log.d(TAG, "Device shaked; shuffle pictures");
+        }
     }
 }
