@@ -150,13 +150,14 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
             mCurrentSearch = response.getPhotos();
             PhotoMetaModel[] metaModels = mCurrentSearch.getPhoto();
             mExpected = mVisiblePhotos.size() + metaModels.length;
+        } else {
+            Toast.makeText(this, getString(R.string.flickr_search_none_found), Toast.LENGTH_SHORT).show();
         }
     }
 
     private void loadAdditionalItems(PhotosResponseModel search)
     {
         int newPage = search.getPage() + 1;
-        Log.d(TAG, "loadAdditionalItems: load items from page " + newPage);
 
         mIsQuerying = true;
         Toast.makeText(this, getString(R.string.flickr_search_loading), Toast.LENGTH_LONG).show();

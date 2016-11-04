@@ -24,7 +24,6 @@
 
         <activity
             android:name=".activity.DetailActivity"
-            android:screenOrientation="sensorLandscape"
             />
     </application>
 

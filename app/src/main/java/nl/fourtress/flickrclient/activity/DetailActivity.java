@@ -11,6 +11,8 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.Locale;
+
 import nl.fourtress.flickrclient.FlickrClient;
 import nl.fourtress.flickrclient.ListItem;
 import nl.fourtress.flickrclient.R;
@@ -21,7 +23,8 @@ import nl.fourtress.flickrclient.flickr.model.SizeModel;
 /**
  * @author Rick Slinkman
  */
-public class DetailActivity extends AppCompatActivity implements FlickrDownloadImageTask.FlickrImageDownloadCompletedListener {
+public class DetailActivity extends AppCompatActivity implements FlickrDownloadImageTask.FlickrImageDownloadCompletedListener
+{
     private static final String TAG = "DetailActivity";
     private ImageView mLargePhoto;
     private ProgressBar mLoader;
@@ -54,10 +57,11 @@ public class DetailActivity extends AppCompatActivity implements FlickrDownloadI
 
         String biggestPictureURL = "";
         int biggestWidth = 0;
+        int maxWidth = 1080; // px
         for(SizeModel size : clickedItem.getSizes())
         {
             int width = size.getWidth();
-            if(width > biggestWidth) {
+            if(width > biggestWidth && width <= maxWidth) {
                 biggestWidth = width;
                 biggestPictureURL = size.getSource();
                 mUsedSize = size;
@@ -72,14 +76,20 @@ public class DetailActivity extends AppCompatActivity implements FlickrDownloadI
     }
 
     @Override
-    public void onFlickrImageDownloaded(PhotoMetaModel item, SizeModel[] sizes, Bitmap result)
+    public void onFlickrImageDownloaded(PhotoMetaModel item, final SizeModel[] sizes, Bitmap result)
     {
         mLargePhoto.setImageBitmap(result);
+
         mTitleView.setText(item.getTitle());
-        mLinkView.setText(mUsedSize.getSource());
         mInfoServer.setText(item.getServer());
-        mInfoSize.setText(mUsedSize.getLabel());
         mInfoOwner.setText(item.getOwner());
+
+        String sizeString = String.format(Locale.US, "%s (%d x %d)",
+                mUsedSize.getLabel(),
+                mUsedSize.getWidth(),
+                mUsedSize.getHeight());
+        mInfoSize.setText(sizeString);
+        mLinkView.setText(mUsedSize.getSource());
 
         mLoader.setVisibility(View.GONE);
         mContent.setVisibility(View.VISIBLE);

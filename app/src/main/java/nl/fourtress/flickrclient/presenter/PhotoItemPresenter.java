@@ -1,18 +1,13 @@
 package nl.fourtress.flickrclient.presenter;
 
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.TextView;
 
-import nl.fourtress.flickrclient.BuildConfig;
 import nl.fourtress.flickrclient.ListItem;
 import nl.fourtress.flickrclient.R;
-import nl.fourtress.flickrclient.flickr.FlickrImageTask;
-import nl.fourtress.flickrclient.flickr.model.PhotoMetaModel;
 import nl.rwslinkman.presentable.Presenter;
 
 /**
@@ -20,8 +15,6 @@ import nl.rwslinkman.presentable.Presenter;
  */
 public class PhotoItemPresenter implements Presenter<ListItem, PhotoItemPresenter.ViewHolder>
 {
-    private static final String TAG = "PhotoItemPresenter";
-
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent)
     {

@@ -61,7 +61,5 @@ public class FlickrDownloadImageTask extends AsyncTask<String, Void, Bitmap>
         }
 
         mListener.onFlickrImageDownloaded(mItem, mSizes, result);
-        // TODO
-        Log.d(TAG, "onPostExecute: bitmap found " + (result != null));
     }
 }

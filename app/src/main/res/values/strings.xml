@@ -5,9 +5,10 @@
     <string name="too_many_keywords">Too many keywords</string>
     <string name="flickr_search_error">Unknown error while getting Flickr images</string>
     <string name="flickr_search_loaded">Loaded new images from Flickr</string>
-    <string name="flickr_search_loading">Loading new photos</string>
+    <string name="flickr_search_loading">Loading new photos. Please wait…</string>
     <string name="detail_no_clicked_image">No image provided</string>
     <string name="detail_label_owner">Owner ID:</string>
     <string name="detail_label_size">Size displayed:</string>
     <string name="detail_label_server">Server ID:</string>
+    <string name="flickr_search_none_found">No results found</string>
 </resources>
