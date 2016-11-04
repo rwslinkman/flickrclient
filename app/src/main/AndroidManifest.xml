@@ -14,7 +14,9 @@
         >
 
         <activity
-            android:name=".activity.ListActivity">
+            android:name=".activity.ListActivity"
+            android:configChanges="orientation|screenSize"
+            >
             <!-- Launching activity -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

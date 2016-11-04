@@ -175,20 +175,19 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onFlickrImageTaskCompleted(SizeModel[] sizes, PhotoMetaModel item)
     {
-        //
+        // Calculate largest possible picture
         int desiredThumbWidth = 650;
         SizeModel thumbNail = null;
         for(SizeModel size : sizes)
         {
             if(size.getWidth() <= desiredThumbWidth)
             {
-                Log.d(TAG, "onFlickrImageTaskCompleted: width medium " + size.getWidth());
-                Log.d(TAG, "onFlickrImageTaskCompleted: height medium " + size.getHeight());
                 thumbNail = size;
             }
         }
 
         if(thumbNail != null) {
+            // Download image
             FlickrDownloadImageTask downloadTask = new FlickrDownloadImageTask(thumbNail.getSource(), item, sizes, this);
             downloadTask.execute();
         } else {

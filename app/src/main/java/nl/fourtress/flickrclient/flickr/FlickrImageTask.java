@@ -40,13 +40,9 @@ public class FlickrImageTask extends HttpRequestTask
 
         Gson converter = new Gson();
         ImageSizesResponseModel model = converter.fromJson(getResponseBody(), ImageSizesResponseModel.class);
-        Log.d(TAG, "onRequestComplete: body " + getResponseBody());
-        Log.d(TAG, "onRequestComplete: code " + getResponseCode());
         if(model != null && model.getSizes() != null && model.getStat().equals("ok"))
         {
             mCompletedListener.onFlickrImageTaskCompleted(model.getSizes().getSize(), mItem);
-            Log.d(TAG, "onRequestComplete: request successful");
-            Log.d(TAG, "onRequestComplete: image has " + model.getSizes().getSize().length+ " sizes");
         }
         else {
             FlickrErrorResponse error = converter.fromJson(getResponseBody(), FlickrErrorResponse.class);
