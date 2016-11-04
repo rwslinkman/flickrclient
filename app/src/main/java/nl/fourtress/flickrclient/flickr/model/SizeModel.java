@@ -6,8 +6,8 @@ package nl.fourtress.flickrclient.flickr.model;
 public class SizeModel
 {
     private String label;
-    private int width;
-    private int height;
+    private Object width;
+    private Object height;
     private String source;
     private String url;
     private String media;
@@ -24,11 +24,15 @@ public class SizeModel
         return source;
     }
 
-    public int getWidth() {
-        return width;
+    public int getWidth()
+    {
+        String w = width.toString();
+        return (int) Double.parseDouble(w);
     }
 
-    public int getHeight() {
-        return height;
+    public int getHeight()
+    {
+        String h = height.toString();
+        return (int) Double.parseDouble(h);
     }
 }

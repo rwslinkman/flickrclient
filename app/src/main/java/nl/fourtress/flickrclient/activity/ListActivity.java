@@ -5,6 +5,8 @@ import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -73,6 +75,7 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
                 loadAdditionalItems(mCurrentSearch);
             }
         });
+        mPhotoList.setItemAnimator(new DefaultItemAnimator());
         mVisiblePhotos = new ArrayList<>();
         mPhotoListAdapter = new PresentableAdapter<>(new PhotoItemPresenter(), mVisiblePhotos);
         mPhotoListAdapter.setItemClickListener(this);
@@ -173,12 +176,15 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     public void onFlickrImageTaskCompleted(SizeModel[] sizes, PhotoMetaModel item)
     {
         //
+        int desiredThumbWidth = 650;
         SizeModel thumbNail = null;
-        for(SizeModel size : sizes) {
-            if(size.getLabel().equalsIgnoreCase("medium"))
+        for(SizeModel size : sizes)
+        {
+            if(size.getWidth() <= desiredThumbWidth)
             {
+                Log.d(TAG, "onFlickrImageTaskCompleted: width medium " + size.getWidth());
+                Log.d(TAG, "onFlickrImageTaskCompleted: height medium " + size.getHeight());
                 thumbNail = size;
-                break;
             }
         }
 
