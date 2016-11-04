@@ -57,7 +57,7 @@ public class DetailActivity extends AppCompatActivity implements FlickrDownloadI
 
         String biggestPictureURL = "";
         int biggestWidth = 0;
-        int maxWidth = 1080; // px
+        int maxWidth = 1080; // px, using too large pictures is not desirable
         for(SizeModel size : clickedItem.getSizes())
         {
             int width = size.getWidth();

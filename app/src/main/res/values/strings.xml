@@ -11,4 +11,5 @@
     <string name="detail_label_size">Size displayed:</string>
     <string name="detail_label_server">Server ID:</string>
     <string name="flickr_search_none_found">No results found</string>
+    <string name="detail_image_descr">Detail image from Flickr</string>
 </resources>
