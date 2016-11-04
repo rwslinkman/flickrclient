@@ -5,6 +5,8 @@ rick.slinkman@fourtress.nl
 This app is a basic implementation of the Flickr API.
 It contains 3 API calls in order to get and display images from Flickr.
 There is an infinitely scrolling RecyclerView  to display the list of images.
+By clicking on an image, you will see the details of the image.
+Shake your phone when you see the images, it will shuffle the list order.
 
 Architecture
     The architecture for this app is based on 3 mayor focus points.
@@ -41,6 +43,11 @@ Architecture
     Building the UI and setting the UI's values is done in the Presenter class.
     The adapter (which comes with the library) handles the list item collection.
     The PresentableAdapter is a "one size fits all" solution that takes custom Presenters.
+
+    Classes that were used by the activities but do not belong to a distinct package are put in the 'util' package.
+    Amongst others, the ShakeListener is there. This listener monitors the accelerometer output.
+    When the accelerometers measure a acceleration higher than the threshold, an event is sent.
+    Small and reusable methods are statically available through the Utils class.
 
 3rd party dependencies
 - com.android.support:design v24.2.0
