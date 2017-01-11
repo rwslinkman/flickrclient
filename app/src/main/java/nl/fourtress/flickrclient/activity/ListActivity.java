@@ -18,35 +18,40 @@ import android.widget.Toast;
 import com.github.pwittchen.infinitescroll.library.InfiniteScrollListener;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import nl.fourtress.flickrclient.BuildConfig;
 import nl.fourtress.flickrclient.FlickrClient;
-import nl.fourtress.flickrclient.util.ListItem;
 import nl.fourtress.flickrclient.R;
-import nl.fourtress.flickrclient.util.ShakeListener;
-import nl.fourtress.flickrclient.util.Utils;
+import nl.fourtress.flickrclient.flickr.FlickrAPI;
 import nl.fourtress.flickrclient.flickr.FlickrDownloadImageTask;
-import nl.fourtress.flickrclient.flickr.FlickrSearchTask;
-import nl.fourtress.flickrclient.flickr.model.FlickrErrorResponse;
+import nl.fourtress.flickrclient.flickr.model.ImageSizesResponseModel;
 import nl.fourtress.flickrclient.flickr.model.PhotoMetaModel;
 import nl.fourtress.flickrclient.flickr.model.PhotosResponseModel;
 import nl.fourtress.flickrclient.flickr.model.SearchResponseModel;
 import nl.fourtress.flickrclient.flickr.model.SizeModel;
 import nl.fourtress.flickrclient.presenter.PhotoItemPresenter;
+import nl.fourtress.flickrclient.util.ListItem;
+import nl.fourtress.flickrclient.util.ShakeListener;
+import nl.fourtress.flickrclient.util.Utils;
 import nl.rwslinkman.presentable.PresentableAdapter;
 import nl.rwslinkman.presentable.PresentableItemClickListener;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 /**
  * @author Rick Slinkman
  */
 public class ListActivity extends AppCompatActivity implements View.OnClickListener,
-        FlickrSearchTask.FlickrSearchCompletedListener,
         FlickrDownloadImageTask.FlickrImageDownloadCompletedListener,
         PresentableItemClickListener<ListItem>,
         View.OnKeyListener,
-        ShakeListener.OnShakeListener
-{
+        ShakeListener.OnShakeListener, Callback<SearchResponseModel> {
     private static final String TAG = "ListActivity";
     private static final int PHOTOS_PER_PAGE = 15;
 
@@ -54,7 +59,7 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     private ProgressBar mProgress;
     private FloatingActionButton mSearchButton;
     private EditText mSearchField;
-    private String mQueryURL;
+//    private String mQueryURL;
     private PresentableAdapter<ListItem> mPhotoListAdapter;
     private ArrayList<ListItem> mVisiblePhotos;
     private PhotosResponseModel mCurrentSearch;
@@ -62,6 +67,7 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
     private boolean mIsQuerying;
     private int mExpected;
     private ShakeListener shakeListener;
+    private FlickrAPI mFlickerAPI;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -92,12 +98,14 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
         mSearchField = (EditText) findViewById(R.id.flickr_search_field);
         mSearchField.setOnKeyListener(this);
 
-        String url = "https://api.flickr.com/services/rest/?method=flickr.photos.search" +
-                    "&api_key=%s" +
-                    "&per_page=" + PHOTOS_PER_PAGE +
-                    "&format=json" +
-                    "&nojsoncallback=1";
-        this.mQueryURL = String.format(url, BuildConfig.FLICKR_API_KEY);
+//        https://api.flickr.com/services/rest/?method=
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://api.flickr.com/services/rest/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        // prepare call in Retrofit 2.0
+        mFlickerAPI = retrofit.create(FlickrAPI.class);
     }
 
     @Override
@@ -151,22 +159,9 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
         // Execute API request
         mIsQuerying = true;
         mSearchTags = Utils.joinTags(tags, "%2C");
-        String flickrQuery = mQueryURL + "&tags=" + mSearchTags;
-        FlickrSearchTask task = new FlickrSearchTask(flickrQuery, this);
-        task.execute();
-    }
 
-    @Override
-    public void onFlickrSearchCompleted(SearchResponseModel response)
-    {
-        int resultCount = response.getPhotos().getPerPage();
-        if(resultCount > 0) {
-            mCurrentSearch = response.getPhotos();
-            PhotoMetaModel[] metaModels = mCurrentSearch.getPhoto();
-            mExpected = mVisiblePhotos.size() + metaModels.length;
-        } else {
-            Toast.makeText(this, getString(R.string.flickr_search_none_found), Toast.LENGTH_SHORT).show();
-        }
+        Call<SearchResponseModel> call = mFlickerAPI.searchImages(BuildConfig.FLICKR_API_KEY, PHOTOS_PER_PAGE, mSearchTags);
+        call.enqueue(this);
     }
 
     private void loadAdditionalItems(PhotosResponseModel search)
@@ -176,46 +171,8 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
         mIsQuerying = true;
         Toast.makeText(this, getString(R.string.flickr_search_loading), Toast.LENGTH_LONG).show();
 
-        String flickrQuery = mQueryURL +
-                "&tags=" + mSearchTags +
-                "&page=" + newPage;
-        FlickrSearchTask task = new FlickrSearchTask(flickrQuery, this);
-        task.execute();
-    }
-
-    @Override
-    public void onFlickrImageTaskCompleted(SizeModel[] sizes, PhotoMetaModel item)
-    {
-        // Calculate largest possible picture
-        int desiredThumbWidth = 650;
-        SizeModel thumbNail = null;
-        for(SizeModel size : sizes)
-        {
-            if(size.getWidth() <= desiredThumbWidth)
-            {
-                thumbNail = size;
-            }
-        }
-
-        if(thumbNail != null) {
-            // Download image
-            FlickrDownloadImageTask downloadTask = new FlickrDownloadImageTask(thumbNail.getSource(), item, sizes, this);
-            downloadTask.execute();
-        } else {
-            Log.e(TAG, "onFlickrImageTaskCompleted: Size unavailable for item " + item.getId());
-        }
-    }
-
-    @Override
-    public void onFlickrImageTaskError(FlickrErrorResponse error) {
-        mIsQuerying = false;
-        Log.e(TAG, "onFlickrSearchError: Request was not successful");
-        String msg = (error == null) ? getString(R.string.flickr_search_error) : error.getMessage();
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
-
-        // UI updates after request
-        mProgress.setVisibility(View.GONE);
-        mPhotoList.setItemViewCacheSize(View.GONE);
+        Call<SearchResponseModel> call = mFlickerAPI.searchImages(BuildConfig.FLICKR_API_KEY, PHOTOS_PER_PAGE, mSearchTags, newPage);
+        call.enqueue(this);
     }
 
     @Override
@@ -282,5 +239,83 @@ public class ListActivity extends AppCompatActivity implements View.OnClickListe
             mPhotoListAdapter.notifyDataSetChanged();
             Log.d(TAG, "Device shaked; shuffle pictures");
         }
+    }
+
+    @Override
+    public void onResponse(Call<SearchResponseModel> call, Response<SearchResponseModel> response)
+    {
+        Log.d(TAG, "onResponse: ");
+
+        if(response.isSuccessful())
+        {
+            SearchResponseModel body = response.body();
+            int resultCount = body.getPhotos().getPerPage();
+            if(resultCount > 0) {
+                mCurrentSearch = body.getPhotos();
+                PhotoMetaModel[] metaModels = mCurrentSearch.getPhoto();
+                mExpected = mVisiblePhotos.size() + metaModels.length;
+            } else {
+                Toast.makeText(this, getString(R.string.flickr_search_none_found), Toast.LENGTH_SHORT).show();
+            }
+
+            List<PhotoMetaModel> modelsToAdd = Arrays.asList(body.getPhotos().getPhoto());
+            for (final PhotoMetaModel item : modelsToAdd)
+            {
+                Log.d(TAG, "onResponse: photometa item " + item.getId());
+
+                Call<ImageSizesResponseModel> sizeCall = mFlickerAPI.getItemSizes(BuildConfig.FLICKR_API_KEY, item.getId());
+                sizeCall.enqueue(new Callback<ImageSizesResponseModel>() {
+                    @Override
+                    public void onResponse(Call<ImageSizesResponseModel> call, Response<ImageSizesResponseModel> response) {
+                        if(response.isSuccessful())
+                        {
+                            ImageSizesResponseModel sizeResponse = response.body();
+
+                            int desiredThumbWidth = 650;
+                            SizeModel thumbNail = null;
+                            SizeModel[] sizes = sizeResponse.getSizes().getSize();
+                            for(SizeModel size : sizes)
+                            {
+                                if(size.getWidth() <= desiredThumbWidth)
+                                {
+                                    thumbNail = size;
+                                }
+                            }
+
+                            if(thumbNail != null) {
+                                // Download image
+                                FlickrDownloadImageTask downloadTask = new FlickrDownloadImageTask(thumbNail.getSource(), item, sizes, ListActivity.this);
+                                downloadTask.execute();
+                            } else {
+                                Log.e(TAG, "onFlickrImageTaskCompleted: Size unavailable for item " + item.getId());
+                            }
+                            Log.d(TAG, "onResponse: check 't uut " );
+                        }
+                        else {
+                            mIsQuerying = false;
+                            Log.e(TAG, "onFlickrSearchError: Request was not successful");
+                            String msg = getString(R.string.flickr_search_error);
+                            Toast.makeText(ListActivity.this, msg, Toast.LENGTH_SHORT).show();
+
+                            // UI updates after request
+                            mProgress.setVisibility(View.GONE);
+                            mPhotoList.setItemViewCacheSize(View.GONE);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<ImageSizesResponseModel> call, Throwable t)
+                    {
+                        Log.d(TAG, "onFailure: " + t.getMessage());
+                    }
+                });
+            }
+        }
+    }
+
+    @Override
+    public void onFailure(Call<SearchResponseModel> call, Throwable t)
+    {
+        Log.d(TAG, "onFailure: " + t.getMessage());
     }
 }
